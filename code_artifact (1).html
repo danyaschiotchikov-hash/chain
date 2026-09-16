@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <!-- Строгий viewport для мобильных устройств: отключает случайное масштабирование двойным тапом -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Сольфеджио: Тренажер интервалов</title>
+    
+    <!-- Подключение библиотек -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            /* Кроссбраузерный скроллбар для Firefox */
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+            /* Запрет выделения текста для ощущения "приложения" */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* Кастомный скроллбар для Chrome/Safari/Edge */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .btn-interval {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Убирает задержку в 300мс на мобильных устройствах */
+            touch-action: manipulation; 
+        }
+        .btn-interval:active { transform: scale(0.95); }
+        
+        button { touch-action: manipulation; }
+
+        .pulse-animation {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col items-center py-6 px-4 sm:px-6">
+
+    <header class="w-full max-w-5xl text-center mb-8 space-y-2">
+        <div class="inline-flex items-center justify-center p-3 bg-indigo-100 rounded-full mb-2">
+            <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+            </svg>
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">Вокальный тренажер</h1>
+        <p class="text-slate-500 max-w-xl mx-auto">Строй интервалы голосом, проверяй точность попадания и развивай музыкальный слух.</p>
+    </header>
+
+    <main class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- НАСТРОЙКИ (Левая/Верхняя часть) -->
+        <div class="lg:col-span-7 bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-8">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Настройки тренировки
+                </h2>
+            </div>
+
+            <!-- Выбор ноты, направления и длительности -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Базовая нота -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-slate-700 uppercase tracking-wide">Базовая нота</label>
+                    <div class="relative">
+                        <select id="baseNoteSelect" class="block w-full pl-4 pr-10 py-3 text-base border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-xl border bg-slate-50 hover:bg-white transition-colors cursor-pointer appearance-none">
+                            <option value="chain">Цепочка (предыдущая)</option>
+                            <option value="random">Случайная нота</option>
+                            <!-- Генерируется JS -->
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-2 mt-2 cursor-pointer group">
+                        <input type="checkbox" id="autoDroneCheckbox" class="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500">
+                        <span class="text-sm text-slate-600 group-hover:text-slate-800 transition-colors">Авто-воспроизведение тона</span>
+                    </label>
+                </div>
+
+                <!-- Направление -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-slate-700 uppercase tracking-wide">Направление</label>
+                    <div class="flex p-1 bg-slate-100 rounded-xl space-x-1" id="directionToggle">
+                        <button data-dir="up" class="flex-1 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none">Вверх</button>
+                        <button data-dir="both" class="flex-1 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none bg-white shadow text-indigo-700">Любое</button>
+                        <button data-dir="down" class="flex-1 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none">Вниз</button>
+                    </div>
+                </div>
+
+                <!-- Длительность ответа -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-end">
+                        <label class="block text-sm font-semibold text-slate-700 uppercase tracking-wide">Длительность</label>
+                        <span id="durationLabel" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">2.5 сек</span>
+                    </div>
+                    <div class="pt-2">
+                        <input type="range" id="durationSlider" min="0.5" max="5" step="0.5" value="2.5" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                        <div class="flex justify-between text-xs text-slate-400 mt-1 font-medium">
+                            <span>0.5с</span>
+                            <span>5с</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Громкость нот -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <!-- Громкость базовой ноты -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-end">
+                        <label class="block text-sm font-semibold text-slate-700 uppercase tracking-wide">Громкость: Базовая нота</label>
+                        <span id="volBaseLabel" class="text-xs font-bold text-indigo-600 bg-indigo-100 px-2 py-1 rounded-md">80%</span>
+                    </div>
+                    <div class="pt-2">
+                        <input type="range" id="volBaseSlider" min="0" max="100" step="1" value="80" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                    </div>
+                </div>
+
+                <!-- Громкость целевой ноты -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-end">
+                        <label class="block text-sm font-semibold text-slate-700 uppercase tracking-wide">Громкость: Целевая нота</label>
+                        <span id="volTargetLabel" class="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md">80%</span>
+                    </div>
+                    <div class="pt-2">
+                        <input type="range" id="volTargetSlider" min="0" max="100" step="1" value="80" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Выбор интервалов -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-end">
+                    <label class="block text-sm font-semibold text-slate-700 uppercase tracking-wide">Изучаемые интервалы</label>
+                    <button id="selectAllBtn" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Выбрать все</button>
+                </div>
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-2" id="intervalRow1">
+                        <!-- Малые и чистые (генерируется JS) -->
+                    </div>
+                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-2" id="intervalRow2">
+                        <!-- Большие и чистые (генерируется JS) -->
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-2 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Нажмите на интервал, чтобы включить/исключить его из заданий
+                </p>
+            </div>
+        </div>
+
+        <!-- РАБОЧАЯ ОБЛАСТЬ (Правая часть) -->
+        <div class="lg:col-span-5 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl shadow-xl p-8 flex flex-col justify-between relative overflow-hidden min-h-[480px]">
+            <!-- Декоративные элементы фона -->
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-400 opacity-20 rounded-full blur-2xl pointer-events-none"></div>
+
+            <!-- Статус и Задание -->
+            <div class="relative z-10 flex flex-col h-full">
+                
+                <div class="flex justify-between items-center mb-8">
+                    <span class="bg-white/20 text-indigo-50 text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full backdrop-blur-sm border border-white/10">
+                        Текущее задание
+                    </span>
+                </div>
+
+                <div id="taskDisplay" class="flex-grow flex flex-col items-center justify-center text-center space-y-4">
+                    <p class="text-indigo-100 text-lg font-medium">Постройте от ноты</p>
+                    <div class="bg-white/10 p-4 rounded-2xl w-full border border-white/10 backdrop-blur-md shadow-inner">
+                        <h3 id="uiBaseNote" class="text-4xl font-black text-white drop-shadow-md">До (C4)</h3>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 my-4">
+                        <span id="uiDirectionIcon" class="bg-purple-500/50 p-2 rounded-full text-white">
+                            <!-- Иконка стрелки -->
+                        </span>
+                        <h3 id="uiInterval" class="text-3xl font-bold text-white drop-shadow-md">м3</h3>
+                        <span class="text-indigo-200 text-lg" id="uiDirectionText">вверх</span>
+                    </div>
+                    
+                    <!-- Блок ответа (скрыт до проверки) -->
+                    <div id="answerBlock" class="opacity-0 transition-opacity duration-500 h-16 flex items-center justify-center">
+                        <p class="text-emerald-300 font-semibold text-lg flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Целевая нота: <span id="uiTargetNote" class="text-2xl font-bold text-white ml-1">Ми-бемоль (Eb4)</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Кнопки воспроизведения -->
+                <div class="mt-8 space-y-3 z-10">
+                    <button id="playBaseBtn" class="w-full bg-indigo-800/40 hover:bg-indigo-800/60 border border-indigo-400/30 text-white font-medium py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                        Дать тон (Базовая нота)
+                    </button>
+                    
+                    <div class="flex gap-3">
+                        <button id="checkBtn" class="flex-1 bg-white text-indigo-700 hover:bg-slate-50 font-bold py-4 px-2 sm:px-4 rounded-xl shadow-lg transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 pulse-animation">
+                            <svg class="w-6 h-6 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                            <span class="text-sm sm:text-base truncate">Проверить</span>
+                        </button>
+                        
+                        <button id="nextTaskBtn" class="flex-1 bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-4 px-2 sm:px-4 rounded-xl shadow-lg transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                            <span class="text-sm sm:text-base truncate">Дальше</span>
+                            <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const NOTE_NAMES_RU = {
+            'C': 'До', 'C#': 'До#', 'D': 'Ре', 'D#': 'Ре#', 'E': 'Ми', 'F': 'Фа',
+            'F#': 'Фа#', 'G': 'Соль', 'G#': 'Соль#', 'A': 'Ля', 'A#': 'Ля#', 'B': 'Си'
+        };
+
+        // Генерация диапазона (от C2 до C6)
+        const FULL_SCALE = [];
+        for (let octave = 2; octave <= 6; octave++) {
+            for (let note of NOTES) {
+                FULL_SCALE.push(note + octave);
+            }
+        }
+
+        // Диапазон для случайной генерации базовой ноты
+        const RANDOM_BASE_MIN_INDEX = FULL_SCALE.indexOf('C3');
+        const RANDOM_BASE_MAX_INDEX = FULL_SCALE.indexOf('C5');
+
+        // Комфортный вокальный диапазон (от Соль большой октавы до Соль 2-й октавы)
+        const VOCAL_MIN_INDEX = FULL_SCALE.indexOf('G2');
+        const VOCAL_MAX_INDEX = FULL_SCALE.indexOf('G5');
+
+        // Определение интервалов для 2-х рядов
+        const INTERVALS = [
+            // Ряд 1: Малые и чистые (6 штук)
+            { id: 'm2', name: 'Малая секунда', short: 'м2', semitones: 1, row: 1 },
+            { id: 'm3', name: 'Малая терция', short: 'м3', semitones: 3, row: 1 },
+            { id: 'P4', name: 'Чистая кварта', short: 'ч4', semitones: 5, row: 1 },
+            { id: 'TT', name: 'Тритон', short: 'ув4/ум5', semitones: 6, row: 1 },
+            { id: 'm6', name: 'Малая секста', short: 'м6', semitones: 8, row: 1 },
+            { id: 'm7', name: 'Малая септима', short: 'м7', semitones: 10, row: 1 },
+
+            // Ряд 2: Большие и чистые (6 штук)
+            { id: 'M2', name: 'Большая секунда', short: 'б2', semitones: 2, row: 2 },
+            { id: 'M3', name: 'Большая терция', short: 'б3', semitones: 4, row: 2 },
+            { id: 'P5', name: 'Чистая квинта', short: 'ч5', semitones: 7, row: 2 },
+            { id: 'M6', name: 'Большая секста', short: 'б6', semitones: 9, row: 2 },
+            { id: 'M7', name: 'Большая септима', short: 'б7', semitones: 11, row: 2 },
+            { id: 'P8', name: 'Чистая октава', short: 'ч8', semitones: 12, row: 2 }
+        ];
+
+        let state = {
+            selectedIntervals: new Set(['m2', 'M2', 'm3', 'M3', 'P4', 'P5']),
+            direction: 'both',
+            baseNoteSetting: 'chain',
+            currentTask: null,
+            isPlaying: false,
+            isDronePlaying: false,
+            autoPlayDrone: false
+        };
+
+        let synthBase = null;
+        let synthTarget = null;
+        let audioInitialized = false;
+
+        async function initAudio() {
+            if (audioInitialized) return;
+            await Tone.start();
+            
+            // Чистый тембр (треугольная волна - минимум обертонов, нет треска и биений)
+            const synthConfig = {
+                oscillator: { 
+                    type: "triangle" 
+                },
+                envelope: { 
+                    attack: 0.15,  // Мягкий старт
+                    decay: 0.2, 
+                    sustain: 0.8, 
+                    release: 1.2   // Длинный и мягкий хвост затухания
+                }
+            };
+            
+            synthBase = new Tone.Synth(synthConfig);
+            synthTarget = new Tone.Synth(synthConfig);
+            
+            // Разводим по панораме для читаемости (левое/правое ухо)
+            const panBase = new Tone.Panner(-0.3);
+            const panTarget = new Tone.Panner(0.3);
+            
+            // Легкая комната
+            const reverb = new Tone.Reverb({ decay: 2.0, wet: 0.2 });
+            
+            // Лимитер с запасом (-4 дБ) от перегруза
+            const limiter = new Tone.Limiter(-4).toDestination();
+            
+            reverb.connect(limiter);
+            synthBase.connect(panBase);
+            panBase.connect(reverb);
+            synthTarget.connect(panTarget);
+            panTarget.connect(reverb);
+            
+            updateVolume(synthBase, document.getElementById('volBaseSlider').value);
+            updateVolume(synthTarget, document.getElementById('volTargetSlider').value);
+            
+            audioInitialized = true;
+        }
+
+        function formatNoteRu(noteStr) {
+            const match = noteStr.match(/([A-Z]#?)(\d)/);
+            if (!match) return noteStr;
+            const note = match[1];
+            const octave = match[2];
+            return `${NOTE_NAMES_RU[note]} (${noteStr})`;
+        }
+
+        function getArrowIcon(direction) {
+            if (direction === 'up') {
+                return `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>`;
+            } else {
+                return `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>`;
+            }
+        }
+
+        const baseNoteSelect = document.getElementById('baseNoteSelect');
+        const intervalRow1 = document.getElementById('intervalRow1');
+        const intervalRow2 = document.getElementById('intervalRow2');
+        const dirButtons = document.querySelectorAll('#directionToggle button');
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const durationSlider = document.getElementById('durationSlider');
+        const durationLabel = document.getElementById('durationLabel');
+        const autoDroneCheckbox = document.getElementById('autoDroneCheckbox');
+        
+        const volBaseSlider = document.getElementById('volBaseSlider');
+        const volTargetSlider = document.getElementById('volTargetSlider');
+        const volBaseLabel = document.getElementById('volBaseLabel');
+        const volTargetLabel = document.getElementById('volTargetLabel');
+
+        autoDroneCheckbox.addEventListener('change', (e) => {
+            state.autoPlayDrone = e.target.checked;
+        });
+
+        durationSlider.addEventListener('input', (e) => {
+            durationLabel.textContent = `${e.target.value} сек`;
+        });
+
+        function updateVolume(synthInstance, val) {
+            if (!synthInstance) return;
+            synthInstance.volume.value = val <= 0 ? -Infinity : 20 * Math.log10(val / 100) - 6;
+        }
+
+        volBaseSlider.addEventListener('input', (e) => {
+            volBaseLabel.textContent = `${e.target.value}%`;
+            updateVolume(synthBase, e.target.value);
+        });
+
+        volTargetSlider.addEventListener('input', (e) => {
+            volTargetLabel.textContent = `${e.target.value}%`;
+            updateVolume(synthTarget, e.target.value);
+        });
+
+        // Заполнение селекта
+        for (let i = RANDOM_BASE_MIN_INDEX; i <= RANDOM_BASE_MAX_INDEX; i++) {
+            const note = FULL_SCALE[i];
+            const option = document.createElement('option');
+            option.value = note;
+            option.textContent = formatNoteRu(note);
+            if (note.includes('#')) option.textContent = ' ♯ ' + option.textContent;
+            baseNoteSelect.appendChild(option);
+        }
+
+        function renderIntervalBtn(interval) {
+            const btn = document.createElement('button');
+            const isSelected = state.selectedIntervals.has(interval.id);
+            
+            // Новые стили для максимальной читаемости
+            const selectedClasses = 'bg-indigo-600 border-indigo-400 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]';
+            const unselectedClasses = 'bg-slate-700 border-slate-500 text-slate-100 hover:bg-slate-600 hover:border-slate-300 hover:text-white';
+            
+            btn.className = `btn-interval flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                isSelected ? selectedClasses : unselectedClasses
+            }`;
+            
+            // Шрифт стал крупнее (text-base sm:text-lg)
+            btn.innerHTML = `
+                <span class="text-base sm:text-lg font-bold drop-shadow-sm">${interval.short}</span>
+                <span class="text-[10px] sm:text-xs hidden sm:block whitespace-nowrap mt-1 opacity-90">${interval.name.split(' ')[0]}</span>
+            `;
+            
+            btn.onclick = () => {
+                if (state.selectedIntervals.has(interval.id)) {
+                    state.selectedIntervals.delete(interval.id);
+                } else {
+                    state.selectedIntervals.add(interval.id);
+                }
+                const nowSelected = state.selectedIntervals.has(interval.id);
+                btn.className = `btn-interval flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                    nowSelected ? selectedClasses : unselectedClasses
+                }`;
+            };
+            return btn;
+        }
+
+        INTERVALS.filter(i => i.row === 1).forEach(i => intervalRow1.appendChild(renderIntervalBtn(i)));
+        INTERVALS.filter(i => i.row === 2).forEach(i => intervalRow2.appendChild(renderIntervalBtn(i)));
+
+        selectAllBtn.onclick = () => {
+            const allSelected = state.selectedIntervals.size === INTERVALS.length;
+            if (allSelected) {
+                state.selectedIntervals.clear();
+            } else {
+                INTERVALS.forEach(i => state.selectedIntervals.add(i.id));
+            }
+            intervalRow1.innerHTML = '';
+            intervalRow2.innerHTML = '';
+            INTERVALS.filter(i => i.row === 1).forEach(i => intervalRow1.appendChild(renderIntervalBtn(i)));
+            INTERVALS.filter(i => i.row === 2).forEach(i => intervalRow2.appendChild(renderIntervalBtn(i)));
+        };
+
+        function updateDirUI() {
+            dirButtons.forEach(btn => {
+                if (btn.dataset.dir === state.direction) {
+                    btn.classList.add('bg-slate-700', 'shadow', 'text-white');
+                    btn.classList.remove('text-slate-400', 'hover:text-slate-200');
+                } else {
+                    btn.classList.remove('bg-slate-700', 'shadow', 'text-white');
+                    btn.classList.add('text-slate-400', 'hover:text-slate-200');
+                }
+            });
+        }
+        dirButtons.forEach(btn => {
+            btn.onclick = () => {
+                state.direction = btn.dataset.dir;
+                updateDirUI();
+            };
+        });
+        updateDirUI();
+
+        baseNoteSelect.onchange = (e) => {
+            state.baseNoteSetting = e.target.value;
+        };
+
+        function generateTask() {
+            if (state.selectedIntervals.size === 0) {
+                showMessage("Выберите хотя бы один интервал для тренировки!");
+                return;
+            }
+
+            const availableIntervals = INTERVALS.filter(i => state.selectedIntervals.has(i.id));
+            const selectedInterval = availableIntervals[Math.floor(Math.random() * availableIntervals.length)];
+
+            let dir = state.direction;
+            if (dir === 'both') {
+                dir = Math.random() > 0.5 ? 'up' : 'down';
+            }
+
+            let baseNote = state.baseNoteSetting;
+            let baseIndex = -1;
+            
+            if (baseNote === 'chain') {
+                if (state.currentTask && state.currentTask.targetNote) {
+                    baseIndex = FULL_SCALE.indexOf(state.currentTask.targetNote);
+                } else {
+                    baseIndex = RANDOM_BASE_MIN_INDEX + Math.floor(Math.random() * (RANDOM_BASE_MAX_INDEX - RANDOM_BASE_MIN_INDEX + 1));
+                }
+            } else if (baseNote === 'random') {
+                let valid = false;
+                let attempts = 0;
+                while (!valid && attempts < 50) {
+                    baseIndex = RANDOM_BASE_MIN_INDEX + Math.floor(Math.random() * (RANDOM_BASE_MAX_INDEX - RANDOM_BASE_MIN_INDEX + 1));
+                    let targetIndex = dir === 'up' ? baseIndex + selectedInterval.semitones : baseIndex - selectedInterval.semitones;
+                    if (targetIndex >= VOCAL_MIN_INDEX && targetIndex <= VOCAL_MAX_INDEX) {
+                        valid = true;
+                    }
+                    attempts++;
+                }
+            } else {
+                baseIndex = FULL_SCALE.indexOf(baseNote);
+            }
+
+            let targetIndex = dir === 'up' ? baseIndex + selectedInterval.semitones : baseIndex - selectedInterval.semitones;
+            
+            if (targetIndex < VOCAL_MIN_INDEX) { 
+                targetIndex = baseIndex + selectedInterval.semitones; 
+                dir = 'up'; 
+            } 
+            if (targetIndex > VOCAL_MAX_INDEX) { 
+                targetIndex = baseIndex - selectedInterval.semitones; 
+                dir = 'down'; 
+            }
+            
+            if (targetIndex < 0) { targetIndex = 0; }
+            if (targetIndex >= FULL_SCALE.length) { targetIndex = FULL_SCALE.length - 1; }
+
+            state.currentTask = {
+                baseNote: FULL_SCALE[baseIndex],
+                targetNote: FULL_SCALE[targetIndex],
+                interval: selectedInterval,
+                direction: dir
+            };
+
+            updateTaskUI();
+        }
+
+        function updateTaskUI() {
+            const task = state.currentTask;
+            if (!task) return;
+
+            document.getElementById('uiBaseNote').textContent = formatNoteRu(task.baseNote);
+            document.getElementById('uiInterval').textContent = task.interval.short;
+            
+            const dirIcon = document.getElementById('uiDirectionIcon');
+            const dirText = document.getElementById('uiDirectionText');
+            
+            if (task.direction === 'up') {
+                dirIcon.innerHTML = getArrowIcon('up');
+                dirIcon.className = 'bg-emerald-500/50 p-2 rounded-full text-white shadow-lg shadow-emerald-500/30';
+                dirText.textContent = 'вверх';
+            } else {
+                dirIcon.innerHTML = getArrowIcon('down');
+                dirIcon.className = 'bg-rose-500/50 p-2 rounded-full text-white shadow-lg shadow-rose-500/30';
+                dirText.textContent = 'вниз';
+            }
+
+            const answerBlock = document.getElementById('answerBlock');
+            answerBlock.classList.remove('opacity-100');
+            answerBlock.classList.add('opacity-0');
+            document.getElementById('uiTargetNote').textContent = formatNoteRu(task.targetNote);
+
+            const checkBtn = document.getElementById('checkBtn');
+            checkBtn.classList.add('pulse-animation');
+            checkBtn.innerHTML = `
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                <span class="text-sm sm:text-base truncate">Проверить</span>
+            `;
+        }
+
+        function showMessage(msg) {
+            const popup = document.createElement('div');
+            popup.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-rose-600 text-white px-6 py-3 rounded-full shadow-2xl z-50 transition-all font-medium text-sm flex items-center gap-2';
+            popup.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> ${msg}`;
+            document.body.appendChild(popup);
+            setTimeout(() => {
+                popup.style.opacity = '0';
+                popup.style.transform = 'translate(-50%, -20px)';
+                setTimeout(() => popup.remove(), 300);
+            }, 3000);
+        }
+
+        function updatePlayBtnUI(isPlaying) {
+            const btn = document.getElementById('playBaseBtn');
+            if (isPlaying) {
+                btn.innerHTML = `<svg class="w-5 h-5 text-rose-200" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"></path></svg> Остановить тон`;
+                btn.classList.remove('bg-indigo-900/60', 'hover:bg-indigo-800/80', 'border-indigo-500/30');
+                btn.classList.add('bg-rose-600/80', 'hover:bg-rose-600', 'border-rose-500/50');
+            } else {
+                btn.innerHTML = `<svg class="w-5 h-5 text-indigo-300" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg> Дать тон (База)`;
+                btn.classList.remove('bg-rose-600/80', 'hover:bg-rose-600', 'border-rose-500/50');
+                btn.classList.add('bg-indigo-900/60', 'hover:bg-indigo-800/80', 'border-indigo-500/30');
+            }
+        }
+
+        function startDrone(note) {
+            if (!synthBase) return;
+            const now = Tone.now();
+            if (state.isDronePlaying) {
+                synthBase.frequency.rampTo(note, 0.05, now);
+            } else {
+                synthBase.triggerAttack(note, now);
+                state.isDronePlaying = true;
+            }
+            updatePlayBtnUI(true);
+        }
+
+        function stopDrone() {
+            if (state.isDronePlaying && synthBase) {
+                const now = Tone.now();
+                synthBase.triggerRelease(now);
+                state.isDronePlaying = false;
+                updatePlayBtnUI(false);
+            }
+        }
+
+        let checkTimeout = null; 
+
+        document.getElementById('playBaseBtn').onclick = async () => {
+            if (!state.currentTask) return;
+            await initAudio();
+            
+            if (state.isDronePlaying) {
+                stopDrone();
+            } else {
+                startDrone(state.currentTask.baseNote);
+            }
+        };
+
+        document.getElementById('checkBtn').onclick = async () => {
+            if (!state.currentTask) return;
+            await initAudio();
+            
+            state.isPlaying = true;
+            const btn = document.getElementById('checkBtn');
+            btn.classList.remove('pulse-animation');
+            btn.innerHTML = `<svg class="w-5 h-5 sm:w-6 sm:h-6 animate-spin shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> <span class="text-sm sm:text-base hidden sm:inline">Играем...</span>`;
+            
+            const answerBlock = document.getElementById('answerBlock');
+            answerBlock.classList.remove('opacity-0');
+            answerBlock.classList.add('opacity-100');
+
+            const now = Tone.now();
+            const { baseNote, targetNote } = state.currentTask;
+            const playDuration = parseFloat(durationSlider.value);
+
+            if (state.isDronePlaying) {
+                // Если тон тянется - просто добавляем целевую ноту, не прерывая базу
+                synthTarget.triggerAttackRelease(targetNote, playDuration, now);
+            } else {
+                // Если тишина - запускаем обе на заданное время
+                synthBase.triggerAttackRelease(baseNote, playDuration, now);
+                synthTarget.triggerAttackRelease(targetNote, playDuration, now);
+            }
+
+            clearTimeout(checkTimeout);
+            checkTimeout = setTimeout(() => {
+                state.isPlaying = false;
+                btn.innerHTML = `
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm11.707-2.707a1 1 0 00-1.414-1.414L9 9.586 7.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                    <span class="text-sm sm:text-base truncate">Ещё раз</span>
+                `;
+            }, playDuration * 1000 + 100); 
+        };
+
+        document.getElementById('nextTaskBtn').onclick = async () => {
+            await initAudio(); 
+            
+            const now = Tone.now();
+            
+            // Принудительно глушим целевую ноту, если она звучит
+            if (synthTarget) synthTarget.triggerRelease(now);
+            
+            if (state.isPlaying) {
+                state.isPlaying = false;
+                clearTimeout(checkTimeout);
+            }
+            
+            generateTask();
+            
+            if (state.autoPlayDrone || state.isDronePlaying) {
+                startDrone(state.currentTask.baseNote);
+            } else {
+                if (synthBase) synthBase.triggerRelease(now);
+                state.isDronePlaying = false;
+                updatePlayBtnUI(false);
+            }
+        };
+
+        // Кроссплатформенная разблокировка аудио контекста (важно для iOS/Android)
+        const unlockAudioContext = () => {
+            initAudio();
+            document.body.removeEventListener('click', unlockAudioContext);
+            document.body.removeEventListener('touchstart', unlockAudioContext);
+        };
+
+        window.onload = () => {
+            generateTask();
+            // Слушаем и клик, и тач для максимальной совместимости
+            document.body.addEventListener('click', unlockAudioContext, { once: true });
+            document.body.addEventListener('touchstart', unlockAudioContext, { once: true });
+        };
+    </script>
+</body>
+</html>
